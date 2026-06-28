@@ -51,9 +51,9 @@
   .field{display:flex;align-items:center;gap:8px;}
   .field label{flex:0 0 96px;font-size:13px;font-weight:600;color:var(--blue);
     background:var(--blue-soft);border-radius:5px;padding:7px 8px;text-align:center;line-height:1.25;}
-  .field input{flex:1;min-width:0;border:1px solid var(--line);border-radius:5px;
+  .field input,.field select{flex:1;min-width:0;border:1px solid var(--line);border-radius:5px;
     background:var(--field);padding:7px 9px;font:inherit;color:var(--ink);}
-  input:focus,textarea:focus{outline:none;border-color:var(--band);background:#fff;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--band);background:#fff;}
 
   .section{margin-top:24px;break-inside:avoid;}
   .section > h2{font-size:17px;color:var(--blue);font-weight:700;margin:0 0 4px;
@@ -167,7 +167,7 @@
   </div>
   <div class="spacer"></div>
   <span class="save-state" id="saveState">　</span>
-  <a class="btn btn-ghost" href="https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">↗ Notion 名單</a>
+  <a class="btn btn-ghost" href="https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:0 0 auto;"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>Notion 名單</a>
   <button class="btn btn-primary" onclick="window.print()">輸出 PDF</button>
 </div>
 
@@ -183,11 +183,11 @@
     <div class="field"><label>面試日期</label><input type="date" data-k="date"></div>
     <div class="field"><label>應徵職位</label><input type="text" data-k="position" value="行政櫃檯人員"></div>
     <div class="field"><label>面試官</label><input type="text" data-k="interviewer"></div>
-    <div class="field"><label>可到職日</label><input type="text" data-k="startDate"></div>
+    <div class="field"><label>可到職日</label><input type="date" data-k="startDate"></div>
     <div class="field"><label>期望薪資</label><input type="text" data-k="salary"></div>
-    <div class="field"><label>現居地<br>通勤時間</label><input type="text" data-k="location"></div>
-    <div class="field"><label>可否輪班</label><input type="text" data-k="shift"></div>
-    <div class="field"><label>聯絡電話</label><input type="text" data-k="phone"></div>
+    <div class="field"><label>通勤時間</label><select data-k="commute"><option value="">—</option><option>15 分內</option><option>15-30 分</option><option>30 分以上</option></select></div>
+    <div class="field"><label>可否輪班</label><select data-k="shift"><option value="">—</option><option>可</option><option>否</option></select></div>
+    <div class="field"><label>聯絡方式</label><input type="text" data-k="phone"></div>
     <div class="field"><label>資料來源<br>介紹人</label><input type="text" data-k="source"></div>
   </div>
 
@@ -287,7 +287,7 @@
 
   <div class="formfoot">
     <button class="btn btn-primary" onclick="saveCandidate()">儲存到名單</button>
-    <button class="btn btn-ghost" onclick="copyNotionOne()">複製成 Notion 格式</button>
+    <button class="btn btn-ghost" onclick="exportCSVOne()">下載 CSV（匯入 Notion）</button>
     <button class="btn btn-ghost" onclick="newCandidate()">清空表單（填下一位）</button>
   </div>
 </div>
@@ -300,7 +300,7 @@
   </div>
   <div id="cmpBody"></div>
   <div class="formfoot" id="cmpFoot" style="display:none;">
-    <button class="btn btn-primary" onclick="copyNotionAll()">複製整份名單（Notion）</button>
+    <button class="btn btn-primary" onclick="exportCSVAll()">下載 CSV（整份名單）</button>
     <button class="btn btn-ghost" onclick="window.print()">輸出比較表 PDF</button>
     <button class="btn btn-ghost" onclick="clearRoster()">清空整份名單</button>
   </div>
@@ -497,56 +497,44 @@ function notionCells(d){
     d.decide||'', obs.join(', '), d.pros||'', d.cons||''
   ].map(clean);
 }
-function rowsTSV(rows){return rows.map(r=>r.join('\t')).join('\n');}
-function rowsHTML(rows){
-  return '<table>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+/* ---- 產生 CSV（供 Notion「Merge with CSV」匯入） ---- */
+const CSV_HEADERS=["應徵者姓名","面試日期","應徵職位","面試官","經歷穩定","數位工具","客戶溝通","細心抗壓","團隊學習","整體適配","錄取建議","觀察重點","主要優點","疑慮事項"];
+function csvCell(v){v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function csvFrom(rows){
+  const lines=[CSV_HEADERS.map(csvCell).join(',')];
+  rows.forEach(r=>lines.push(r.map(csvCell).join(',')));
+  return '\ufeff'+lines.join('\r\n');               /* BOM + CRLF，中文不亂碼 */
 }
-function copyRich(rows,msg){
-  const tsv=rowsTSV(rows), html=rowsHTML(rows), done=()=>toast(msg);
-  /* 優先寫入「HTML 表格＋純文字」兩種格式：Notion 會以表格拆欄貼上 */
-  if(navigator.clipboard && window.ClipboardItem){
-    try{
-      const item=new ClipboardItem({
-        'text/html':new Blob([html],{type:'text/html'}),
-        'text/plain':new Blob([tsv],{type:'text/plain'})
-      });
-      navigator.clipboard.write([item]).then(done)
-        .catch(()=>navigator.clipboard.writeText(tsv).then(done).catch(()=>fallbackCopy(tsv,done)));
-      return;
-    }catch(e){}
-  }
-  if(navigator.clipboard&&navigator.clipboard.writeText)
-    navigator.clipboard.writeText(tsv).then(done).catch(()=>fallbackCopy(tsv,done));
-  else fallbackCopy(tsv,done);
-}
-function fallbackCopy(t,cb){
-  const ta=document.createElement('textarea');ta.value=t;
-  ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.focus();ta.select();
-  try{document.execCommand('copy');}catch(e){}
-  document.body.removeChild(ta);cb&&cb();
+function csvDate(){const d=new Date();return ''+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+function downloadCSV(text,filename){
+  const blob=new Blob([text],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
-  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4200);
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4600);
 }
-function copyNotionOne(){
+function exportCSVOne(){
   const d=getData();
-  if(!d.name||!d.name.trim()){alert('請先填寫「應徵者姓名」再複製。');return;}
-  copyRich([notionCells(d)],'已複製「'+d.name.trim()+'」　在 Notion 單擊空白列第一格（勿雙擊進入格內）再貼上');
-  if(editId){const full=roster().map(c=>c.id===editId?{...c,exported:true}:c);saveRoster(full);}
+  if(!d.name||!d.name.trim()){alert('請先填寫「應徵者姓名」再下載。');return;}
+  downloadCSV(csvFrom([notionCells(d)]),'面試_'+d.name.trim()+'.csv');
+  toast('已下載 CSV　在 Notion 資料庫右上「⋯」→「Merge with CSV」選此檔匯入');
+  if(editId){saveRoster(roster().map(c=>c.id===editId?{...c,exported:true}:c));}
 }
-function copyNotionAll(){
+function exportCSVAll(){
   const r=roster();
   if(!r.length){alert('名單目前是空的。');return;}
   let targets=r.filter(c=>!c.exported), mode='new';
   if(targets.length===0){
-    if(!confirm('名單中所有人都已匯入過 Notion。要再複製全部 '+r.length+' 位嗎？（可能造成重複）'))return;
+    if(!confirm('名單中所有人都已匯入過。要再下載全部 '+r.length+' 位嗎？'))return;
     targets=r;mode='all';
   }
-  copyRich(targets.map(c=>notionCells(c.data)),
-    '已複製 '+targets.length+' 位'+(mode==='new'?'（僅未匯入者）':'（全部）')+'　單擊空白列第一格（勿雙擊）再貼上');
+  downloadCSV(csvFrom(targets.map(c=>notionCells(c.data))),'面試名單_'+csvDate()+'.csv');
+  toast('已下載 '+targets.length+' 位'+(mode==='new'?'（僅未匯入者）':'（全部）')+'　到 Notion「⋯」→「Merge with CSV」匯入');
   const ids=new Set(targets.map(c=>c.id));
   saveRoster(roster().map(c=>ids.has(c.id)?{...c,exported:true}:c));
   if(!document.getElementById('viewCmp').classList.contains('hidden'))renderCompare();
