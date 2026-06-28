@@ -493,12 +493,14 @@ function notionCells(d){
   const clean=v=>String(v==null?'':v).replace(/[\t\n\r]/g,' ');
   return [
     d.name||'', d.date||'', d.position||'', d.interviewer||'',
+    d.startDate||'', d.salary||'', d.commute||'', d.shift||'',
+    d.phone||'', d.source||'',
     s[0]||'', s[1]||'', s[2]||'', s[3]||'', s[4]||'', s[5]||'',
     d.decide||'', obs.join(', '), d.pros||'', d.cons||''
   ].map(clean);
 }
 /* ---- 產生 CSV（供 Notion「Merge with CSV」匯入） ---- */
-const CSV_HEADERS=["應徵者姓名","面試日期","應徵職位","面試官","經歷穩定","數位工具","客戶溝通","細心抗壓","團隊學習","整體適配","錄取建議","觀察重點","主要優點","疑慮事項"];
+const CSV_HEADERS=["應徵者姓名","面試日期","應徵職位","面試官","可到職日","期望薪資","通勤時間","可否輪班","聯絡方式","資料來源","經歷穩定","數位工具","客戶溝通","細心抗壓","團隊學習","整體適配","錄取建議","觀察重點","主要優點","疑慮事項"];
 function csvCell(v){v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function csvFrom(rows){
   const lines=[CSV_HEADERS.map(csvCell).join(',')];
