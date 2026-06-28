@@ -168,7 +168,6 @@
   <div class="spacer"></div>
   <span class="save-state" id="saveState">　</span>
   <a class="btn btn-ghost" href="https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">↗ Notion 名單</a>
-  <button class="btn btn-ghost" onclick="copyNotionLink()">複製連結</button>
   <button class="btn btn-primary" onclick="window.print()">輸出 PDF</button>
 </div>
 
@@ -487,25 +486,38 @@ function showView(v){
 
 /* ---- 複製成 Notion 格式（貼進資料庫即新增一列） ---- */
 const OBS_LABELS=["準時抵達","儀容得體","眼神微笑","談吐有禮","主動提問","情緒穩定","回答具體"];
-function notionRow(d){
+function notionCells(d){
   const s=d.scores||{};
   const obs=[];
   for(let i=0;i<7;i++) if(d['obs'+i]) obs.push(OBS_LABELS[i]);
-  const cell=v=>String(v==null?'':v).replace(/[\t\n\r]/g,' ');
-  const cols=[
+  const clean=v=>String(v==null?'':v).replace(/[\t\n\r]/g,' ');
+  return [
     d.name||'', d.date||'', d.position||'', d.interviewer||'',
     s[0]||'', s[1]||'', s[2]||'', s[3]||'', s[4]||'', s[5]||'',
-    d.decide||'',
-    obs.join(', '),
-    d.pros||'', d.cons||''
-  ];
-  return cols.map(cell).join('\t');
+    d.decide||'', obs.join(', '), d.pros||'', d.cons||''
+  ].map(clean);
 }
-function copyText(t,msg){
-  const done=()=>toast(msg);
+function rowsTSV(rows){return rows.map(r=>r.join('\t')).join('\n');}
+function rowsHTML(rows){
+  return '<table>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+}
+function copyRich(rows,msg){
+  const tsv=rowsTSV(rows), html=rowsHTML(rows), done=()=>toast(msg);
+  /* 優先寫入「HTML 表格＋純文字」兩種格式：Notion 會以表格拆欄貼上 */
+  if(navigator.clipboard && window.ClipboardItem){
+    try{
+      const item=new ClipboardItem({
+        'text/html':new Blob([html],{type:'text/html'}),
+        'text/plain':new Blob([tsv],{type:'text/plain'})
+      });
+      navigator.clipboard.write([item]).then(done)
+        .catch(()=>navigator.clipboard.writeText(tsv).then(done).catch(()=>fallbackCopy(tsv,done)));
+      return;
+    }catch(e){}
+  }
   if(navigator.clipboard&&navigator.clipboard.writeText)
-    navigator.clipboard.writeText(t).then(done).catch(()=>fallbackCopy(t,done));
-  else fallbackCopy(t,done);
+    navigator.clipboard.writeText(tsv).then(done).catch(()=>fallbackCopy(tsv,done));
+  else fallbackCopy(tsv,done);
 }
 function fallbackCopy(t,cb){
   const ta=document.createElement('textarea');ta.value=t;
@@ -517,15 +529,12 @@ function fallbackCopy(t,cb){
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
-  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3600);
-}
-function copyNotionLink(){
-  copyText('https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33','已複製 Notion 名單連結，可貼給同事');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4200);
 }
 function copyNotionOne(){
   const d=getData();
   if(!d.name||!d.name.trim()){alert('請先填寫「應徵者姓名」再複製。');return;}
-  copyText(notionRow(d),'已複製「'+d.name.trim()+'」　到 Notion 的「貼上專用」檢視，點空白列第一格貼上即可');
+  copyRich([notionCells(d)],'已複製「'+d.name.trim()+'」　在 Notion 單擊空白列第一格（勿雙擊進入格內）再貼上');
   if(editId){const full=roster().map(c=>c.id===editId?{...c,exported:true}:c);saveRoster(full);}
 }
 function copyNotionAll(){
@@ -536,8 +545,8 @@ function copyNotionAll(){
     if(!confirm('名單中所有人都已匯入過 Notion。要再複製全部 '+r.length+' 位嗎？（可能造成重複）'))return;
     targets=r;mode='all';
   }
-  const txt=targets.map(c=>notionRow(c.data)).join('\n');
-  copyText(txt,'已複製 '+targets.length+' 位'+(mode==='new'?'（僅未匯入者）':'（全部）')+'　貼進 Notion「貼上專用」檢視空白列第一格');
+  copyRich(targets.map(c=>notionCells(c.data)),
+    '已複製 '+targets.length+' 位'+(mode==='new'?'（僅未匯入者）':'（全部）')+'　單擊空白列第一格（勿雙擊）再貼上');
   const ids=new Set(targets.map(c=>c.id));
   saveRoster(roster().map(c=>ids.has(c.id)?{...c,exported:true}:c));
   if(!document.getElementById('viewCmp').classList.contains('hidden'))renderCompare();
