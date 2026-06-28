@@ -137,6 +137,8 @@
     .header h1{font-size:21px;}
   }
 
+  #viewCmp{max-width:none;margin:22px 16px;}
+
   #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);
     background:#1B5E8C;color:#fff;font-size:13.5px;line-height:1.5;padding:11px 16px;border-radius:10px;
     max-width:88%;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:.25s;z-index:50;text-align:center;}
@@ -301,8 +303,12 @@
   <div id="cmpBody"></div>
   <div class="formfoot" id="cmpFoot" style="display:none;">
     <button class="btn btn-primary" onclick="exportCSVAll()">下載 CSV（整份名單）</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('notionImport').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;vertical-align:middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>從 Notion 匯入
+    </button>
     <button class="btn btn-ghost" onclick="window.print()">輸出比較表 PDF</button>
     <button class="btn btn-ghost" onclick="clearRoster()">清空整份名單</button>
+    <input type="file" id="notionImport" accept=".csv" style="display:none" onchange="importFromNotion(this)">
   </div>
 </div>
 
@@ -445,8 +451,8 @@ function renderCompare(){
   const foot=document.getElementById('cmpFoot');
   const sub=document.getElementById('cmpSub');
   if(r.length===0){
-    body.innerHTML='<div class="empty">尚未儲存任何應徵者。<br>在「填寫表單」完成後，按下方<b>「儲存到名單」</b>即可加入比較。</div>';
-    foot.style.display='none';sub.textContent='';return;
+    body.innerHTML='<div class="empty">尚未儲存任何應徵者。<br>在「填寫表單」完成後，按下方<b>「儲存到名單」</b>即可加入比較。<br>或點<b>「從 Notion 匯入」</b>載入 Notion 匯出的 CSV。</div>';
+    foot.style.display='flex';sub.textContent='';return;
   }
   foot.style.display='flex';
   sub.textContent='共 '+r.length+' 位　·　門檻 '+th+' 分';
@@ -472,6 +478,68 @@ function renderCompare(){
   h+='</tbody></table></div>';
   body.innerHTML=h;
 }
+/* ---- 從 Notion 匯入 CSV ---- */
+function parseCSV(text){
+  // RFC 4180-compliant parser
+  const rows=[];let row=[],col='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],n=text[i+1];
+    if(inQ){if(c==='"'&&n==='"'){col+='"';i++;}else if(c==='"'){inQ=false;}else{col+=c;}}
+    else if(c==='"'){inQ=true;}
+    else if(c===','){row.push(col);col='';}
+    else if(c==='\r'&&n==='\n'){row.push(col);col='';rows.push(row);row=[];i++;}
+    else if(c==='\n'||c==='\r'){row.push(col);col='';rows.push(row);row='';}
+    else{col+=c;}
+  }
+  if(col||row.length)row.push(col),rows.push(row);
+  return rows.filter(r=>r.some(c=>c.trim()));
+}
+function importFromNotion(input){
+  const file=input.files[0]; input.value='';
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let text=e.target.result;
+    // strip BOM
+    if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    const rows=parseCSV(text);
+    if(rows.length<2){alert('CSV 內容為空或格式不符。');return;}
+    const hdrs=rows[0].map(h=>h.trim());
+    // 欄位對應（容許 Notion 匯出欄序不同）
+    const idx=name=>hdrs.indexOf(name);
+    const OBS_REVERSE={"準時抵達":"obs0","儀容得體":"obs1","眼神微笑":"obs2","談吐有禮":"obs3","主動提問":"obs4","情緒穩定":"obs5","回答具體":"obs6"};
+    const SCORE_KEYS=["經歷穩定","數位工具","客戶溝通","細心抗壓","團隊學習","整體適配"];
+    let added=0,skipped=0;
+    const existing=roster();
+    const existNames=new Set(existing.map(c=>c.data.name||''));
+    const newEntries=[...existing];
+    rows.slice(1).forEach(row=>{
+      const g=col=>idx(col)>=0?(row[idx(col)]||'').trim():'';
+      const name=g('應徵者姓名');
+      if(!name){skipped++;return;}
+      if(existNames.has(name)){skipped++;return;}  // 不覆蓋已有
+      const scores={};
+      SCORE_KEYS.forEach((k,i)=>{const v=parseInt(g(k));scores[i]=isNaN(v)?0:v;});
+      const obsStr=g('觀察重點');
+      const obsData={};
+      obsStr.split(',').map(s=>s.trim()).forEach(s=>{if(OBS_REVERSE[s])obsData[OBS_REVERSE[s]]=true;});
+      const d={
+        name, date:g('面試日期'), position:g('應徵職位'), interviewer:g('面試官'),
+        startDate:g('可到職日'), salary:g('期望薪資'), commute:g('通勤時間'),
+        shift:g('可否輪班'), phone:g('聯絡方式'), source:g('資料來源'),
+        scores, decide:g('錄取建議'), pros:g('主要優點'), cons:g('疑慮事項'),
+        ...obsData
+      };
+      newEntries.push({id:'n'+Date.now()+Math.random().toString(36).slice(2),data:d,savedAt:Date.now(),exported:true});
+      existNames.add(name);added++;
+    });
+    saveRoster(newEntries);
+    renderCompare();
+    toast('已匯入 '+added+' 位'+(skipped?' ('+skipped+' 位已存在或略過)':''));
+  };
+  reader.readAsText(file,'utf-8');
+}
+
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 
 /* ---- 切換分頁 ---- */
