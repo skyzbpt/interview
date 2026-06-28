@@ -167,6 +167,8 @@
   </div>
   <div class="spacer"></div>
   <span class="save-state" id="saveState">　</span>
+  <a class="btn btn-ghost" href="https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">↗ Notion 名單</a>
+  <button class="btn btn-ghost" onclick="copyNotionLink()">複製連結</button>
   <button class="btn btn-primary" onclick="window.print()">輸出 PDF</button>
 </div>
 
@@ -516,6 +518,9 @@ function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
   clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3600);
+}
+function copyNotionLink(){
+  copyText('https://app.notion.com/p/3ddcef1924f94b2d94402799e008ea33','已複製 Notion 名單連結，可貼給同事');
 }
 function copyNotionOne(){
   const d=getData();
