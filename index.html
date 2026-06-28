@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>領航物理治療所｜行政人員面試清單</title>
+<style>
+  :root{
+    --band:#2E86C1; --blue:#1B5E8C; --blue-soft:#EAF4FB;
+    --line:#D8DEE3; --ink:#2B2B2B; --muted:#7A8794;
+    --field:#FAFCFE; --page:#ECF1F6;
+    --warn:#C0392B; --warn-soft:#FCEBEA; --ok:#1E8449;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--page);color:var(--ink);
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif;
+    font-size:15px;line-height:1.7;-webkit-text-size-adjust:100%;
+  }
+
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:9px 16px;
+  }
+  .tabs{display:flex;gap:6px;}
+  .tab{
+    appearance:none;border:1px solid var(--line);background:#fff;border-radius:8px;
+    font-family:inherit;font-size:14px;font-weight:600;color:var(--muted);
+    padding:8px 14px;cursor:pointer;
+  }
+  .tab.active{background:var(--band);color:#fff;border-color:var(--band);}
+  .spacer{flex:1;min-width:0;}
+  .save-state{color:var(--ok);font-size:12.5px;white-space:nowrap;}
+  .btn{appearance:none;border:0;border-radius:8px;cursor:pointer;font-family:inherit;
+       font-size:14px;font-weight:600;padding:9px 15px;white-space:nowrap;}
+  .btn-primary{background:var(--band);color:#fff;}
+  .btn-primary:active{background:var(--blue);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+
+  /* ---------- paper ---------- */
+  .paper{max-width:820px;margin:22px auto;background:#fff;border-radius:6px;
+         box-shadow:0 6px 28px rgba(20,60,90,.10);padding:34px 40px 46px;}
+  .header{background:var(--band);color:#fff;border-radius:4px;text-align:center;padding:18px 16px 14px;}
+  .header h1{margin:0;font-size:25px;letter-spacing:2px;font-weight:700;}
+  .header .clinic{margin-top:4px;font-size:14px;opacity:.92;letter-spacing:1px;}
+
+  .info{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:20px 0 6px;}
+  .field{display:flex;align-items:center;gap:8px;}
+  .field label{flex:0 0 96px;font-size:13px;font-weight:600;color:var(--blue);
+    background:var(--blue-soft);border-radius:5px;padding:7px 8px;text-align:center;line-height:1.25;}
+  .field input{flex:1;min-width:0;border:1px solid var(--line);border-radius:5px;
+    background:var(--field);padding:7px 9px;font:inherit;color:var(--ink);}
+  input:focus,textarea:focus{outline:none;border-color:var(--band);background:#fff;}
+
+  .section{margin-top:24px;break-inside:avoid;}
+  .section > h2{font-size:17px;color:var(--blue);font-weight:700;margin:0 0 4px;
+    padding-bottom:6px;border-bottom:2px solid var(--band);}
+  .desc{color:var(--muted);font-size:13px;font-style:italic;margin:2px 0 10px;}
+  .q{margin:12px 0 6px;font-size:14.5px;}
+  .q b{color:var(--blue);font-weight:700;margin-right:4px;}
+  textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--field);
+    font:inherit;color:var(--ink);padding:8px 10px;resize:vertical;line-height:1.6;}
+  .notes{min-height:54px;margin-top:6px;}
+
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:6px;}
+  .chk{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
+  .chk input{position:absolute;opacity:0;width:0;height:0;}
+  .box{width:18px;height:18px;border:1.6px solid #9bb3c4;border-radius:4px;flex:0 0 18px;
+    display:inline-flex;align-items:center;justify-content:center;transition:.12s;}
+  .chk input:checked + .box{background:var(--band);border-color:var(--band);}
+  .chk input:checked + .box::after{content:"";width:5px;height:9px;border:solid #fff;
+    border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px;}
+
+  .legend{color:var(--muted);font-size:12.5px;margin:2px 0 6px;}
+  .thresh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin:0 0 10px;}
+  .thresh input{width:52px;border:1px solid var(--line);border-radius:5px;padding:4px 6px;font:inherit;text-align:center;}
+  .score-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--line);}
+  .score-row .name{font-size:14.5px;}
+  .scale{display:flex;gap:7px;}
+  .num input{position:absolute;opacity:0;width:0;height:0;}
+  .num{cursor:pointer;}
+  .num .dot{width:30px;height:30px;border:1.5px solid #9bb3c4;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;
+    color:#5a6b78;transition:.12s;}
+  .num input:checked + .dot{background:var(--band);border-color:var(--band);color:#fff;}
+  .total-bar{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:14px;}
+  .total{font-size:18px;font-weight:700;color:var(--blue);}
+  .total #sum{min-width:34px;text-align:center;border-bottom:2px solid var(--band);display:inline-block;}
+  .flag{display:none;font-size:13.5px;font-weight:700;color:var(--warn);
+    background:var(--warn-soft);border:1px solid #f1c7c2;border-radius:20px;padding:5px 12px;}
+  .flag.show{display:inline-block;}
+
+  .decision{display:flex;flex-wrap:wrap;gap:20px;margin:14px 0 6px;font-weight:700;font-size:15px;}
+  .radio{display:flex;align-items:center;gap:8px;cursor:pointer;}
+  .radio input{position:absolute;opacity:0;width:0;height:0;}
+  .ring{width:18px;height:18px;border:1.8px solid #9bb3c4;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;}
+  .radio input:checked + .ring{border-color:var(--band);}
+  .radio input:checked + .ring::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--band);}
+  .sign{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:18px;font-size:14.5px;align-items:center;}
+  .sign label{color:var(--ink);}
+  .sign input{border:0;border-bottom:1px solid #9aa6b1;background:transparent;font:inherit;
+    padding:2px 4px;min-width:150px;}
+
+  .formfoot{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;padding-top:16px;border-top:1px dashed var(--line);}
+
+  /* ---------- compare view ---------- */
+  .hidden{display:none !important;}
+  .cmp-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .cmp-head h2{font-size:19px;color:var(--blue);margin:0;}
+  .cmp-head .sub{color:var(--muted);font-size:13px;}
+  .empty{text-align:center;color:var(--muted);padding:48px 20px;line-height:2;}
+  .tablewrap{overflow-x:auto;}
+  table.cmp{border-collapse:collapse;width:100%;min-width:680px;font-size:13.5px;}
+  table.cmp th,table.cmp td{border:1px solid var(--line);padding:8px 9px;text-align:center;}
+  table.cmp thead th{background:var(--band);color:#fff;font-weight:600;}
+  table.cmp td.name{text-align:left;font-weight:700;color:var(--blue);white-space:nowrap;}
+  table.cmp td.tot{font-weight:800;}
+  table.cmp tr.below td.tot{color:var(--warn);}
+  table.cmp tr.below{background:var(--warn-soft);}
+  table.cmp tr.best td.name::after{content:"　★ 最高分";color:#B7791F;font-weight:600;font-size:12px;}
+  table.cmp .exp{font-size:11px;color:#1E8449;font-weight:600;}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:2px 9px;}
+  .tag.warn{color:var(--warn);background:var(--warn-soft);border:1px solid #f1c7c2;}
+  .tag.ok{color:var(--ok);background:#E8F6EE;border:1px solid #bfe3cd;}
+  .rowbtn{appearance:none;border:1px solid var(--line);background:#fff;border-radius:6px;
+    font-family:inherit;font-size:12.5px;padding:4px 9px;cursor:pointer;color:var(--blue);}
+  .rowbtn.del{color:var(--warn);}
+
+  @media (max-width:560px){
+    .paper{padding:22px 18px 32px;margin:12px;}
+    .info,.checks{grid-template-columns:1fr;}
+    .field label{flex-basis:84px;}
+    .header h1{font-size:21px;}
+  }
+
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);
+    background:#1B5E8C;color:#fff;font-size:13.5px;line-height:1.5;padding:11px 16px;border-radius:10px;
+    max-width:88%;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:.25s;z-index:50;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @page{size:A4;margin:13mm;}
+  @media print{
+    body{background:#fff;}
+    .toolbar{display:none !important;}
+    .paper{box-shadow:none;border-radius:0;margin:0;max-width:none;padding:0;}
+    .formfoot{display:none !important;}
+    .section,.score-row,.q,.field{break-inside:avoid;}
+    input,textarea{background:#fff !important;}
+    table.cmp{min-width:0;font-size:12px;}
+    #toast{display:none !important;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="toolbar">
+  <div class="tabs">
+    <button class="tab active" id="tabForm" onclick="showView('form')">填寫表單</button>
+    <button class="tab" id="tabCmp" onclick="showView('cmp')">應徵者比較 (<span id="cmpCount">0</span>)</button>
+  </div>
+  <div class="spacer"></div>
+  <span class="save-state" id="saveState">　</span>
+  <button class="btn btn-primary" onclick="window.print()">輸出 PDF</button>
+</div>
+
+<!-- ============ 填寫表單 ============ -->
+<div class="paper" id="viewForm">
+  <div class="header">
+    <h1>行政人員 面試評估清單</h1>
+    <div class="clinic">領航物理治療所</div>
+  </div>
+
+  <div class="info">
+    <div class="field"><label>應徵者姓名</label><input type="text" data-k="name"></div>
+    <div class="field"><label>面試日期</label><input type="date" data-k="date"></div>
+    <div class="field"><label>應徵職位</label><input type="text" data-k="position" value="行政櫃檯人員"></div>
+    <div class="field"><label>面試官</label><input type="text" data-k="interviewer"></div>
+    <div class="field"><label>可到職日</label><input type="text" data-k="startDate"></div>
+    <div class="field"><label>期望薪資</label><input type="text" data-k="salary"></div>
+    <div class="field"><label>現居地<br>通勤時間</label><input type="text" data-k="location"></div>
+    <div class="field"><label>可否輪班</label><input type="text" data-k="shift"></div>
+    <div class="field"><label>聯絡電話</label><input type="text" data-k="phone"></div>
+    <div class="field"><label>資料來源<br>介紹人</label><input type="text" data-k="source"></div>
+  </div>
+
+  <div class="section">
+    <h2>一、經歷與工作穩定性</h2>
+    <div class="desc">了解過往背景，評估是否能長期穩定配合。</div>
+    <div class="q"><b>1.</b>請簡單介紹你過去的工作經驗，特別是客服、櫃檯或行政相關的部分。</div>
+    <div class="q"><b>2.</b>上一份工作的離職原因是什麼？</div>
+    <div class="q"><b>3.</b>你理想中會在一個職位待多久？對長期穩定的看法？</div>
+    <div class="q"><b>4.</b>你對物理治療所或醫療院所的工作環境了解多少？為什麼想來這裡？</div>
+    <textarea class="notes" data-k="note1" placeholder="記錄要點…"></textarea>
+  </div>
+
+  <div class="section">
+    <h2>二、行政與數位工具能力</h2>
+    <div class="desc">本所正在數位化，重視學習與操作系統的能力。</div>
+    <div class="q"><b>1.</b>你日常使用哪些電腦工具？（Office、Google 表單、雲端文件等）熟練程度如何？</div>
+    <div class="q"><b>2.</b>是否操作過 LINE 官方帳號、線上預約系統或排班／打卡系統？</div>
+    <div class="q"><b>3.</b>對處理金錢（收費、收據、零用金核對）的數字敏感度與細心度如何？</div>
+    <div class="q"><b>4.</b>情境：櫃檯同時有電話響、LINE 訊息進來、現場患者要結帳，你會如何安排優先順序？</div>
+    <textarea class="notes" data-k="note2" placeholder="記錄要點…"></textarea>
+  </div>
+
+  <div class="section">
+    <h2>三、客戶服務與溝通</h2>
+    <div class="desc">觀察應對態度、同理心，以及面對情緒的穩定度。</div>
+    <div class="q"><b>1.</b>情境：患者預約時間到了，但治療師還在忙無法準時開始，患者明顯不耐煩，你會怎麼處理？</div>
+    <div class="q"><b>2.</b>情境：患者對收費金額有疑問甚至質疑，你會如何回應？</div>
+    <div class="q"><b>3.</b>情境：電話中的長輩聽不太懂預約流程，反覆詢問，你會怎麼說明？</div>
+    <div class="q"><b>4.</b>你怎麼看待「面對正在疼痛或焦慮的患者」這件事？</div>
+    <textarea class="notes" data-k="note3" placeholder="記錄要點…"></textarea>
+  </div>
+
+  <div class="section">
+    <h2>四、細心度與抗壓性</h2>
+    <div class="desc">櫃檯忙碌且需多工，評估穩定度與責任感。</div>
+    <div class="q"><b>1.</b>情境：當天結帳時發現現金帳對不起來，差了幾百元，你會怎麼處理？</div>
+    <div class="q"><b>2.</b>你習慣如何避免出錯？（例如預約重複、收據編號、資料輸入）</div>
+    <div class="q"><b>3.</b>面對忙碌、被多件事同時打斷的時刻，你通常如何讓自己保持穩定？</div>
+    <textarea class="notes" data-k="note4" placeholder="記錄要點…"></textarea>
+  </div>
+
+  <div class="section">
+    <h2>五、團隊配合與人格特質</h2>
+    <div class="desc">評估與治療師、同事的協作，以及主動性。</div>
+    <div class="q"><b>1.</b>你比較喜歡有明確 SOP 的工作，還是需要自己判斷的工作？為什麼？</div>
+    <div class="q"><b>2.</b>本所持續導入新的數位系統，你對學習新工具的態度如何？</div>
+    <div class="q"><b>3.</b>舉一個你主動發現問題並改善的例子。</div>
+    <textarea class="notes" data-k="note5" placeholder="記錄要點…"></textarea>
+  </div>
+
+  <div class="section">
+    <h2>六、面試官觀察重點</h2>
+    <div class="desc">不需提問，於過程中觀察並勾選。</div>
+    <div class="checks">
+      <label class="chk"><input type="checkbox" data-k="obs0"><span class="box"></span>準時 / 提前抵達</label>
+      <label class="chk"><input type="checkbox" data-k="obs1"><span class="box"></span>儀容整潔、穿著得體</label>
+      <label class="chk"><input type="checkbox" data-k="obs2"><span class="box"></span>眼神接觸自然、面帶微笑</label>
+      <label class="chk"><input type="checkbox" data-k="obs3"><span class="box"></span>談吐清晰、有禮貌</label>
+      <label class="chk"><input type="checkbox" data-k="obs4"><span class="box"></span>主動提問，展現興趣</label>
+      <label class="chk"><input type="checkbox" data-k="obs5"><span class="box"></span>情緒穩定，不浮躁</label>
+      <label class="chk"><input type="checkbox" data-k="obs6"><span class="box"></span>回答具體、不含糊</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>七、綜合評分</h2>
+    <div class="legend">1＝明顯不符合　2＝偏弱　3＝普通　4＝良好　5＝非常符合</div>
+    <div class="thresh">低於
+      <input type="number" id="threshold" min="0" max="30" value="18">
+      分時提示「建議再評估」（滿分 30）
+    </div>
+    <div id="scoreList"></div>
+    <div class="total-bar">
+      <span class="flag" id="flag">⚠ 建議再評估</span>
+      <span class="total">總分　<span id="sum">0</span>　/ 30</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>八、綜合評估與決定</h2>
+    <div class="q" style="margin-bottom:4px;"><b>主要優點</b></div>
+    <textarea class="notes" data-k="pros"></textarea>
+    <div class="q" style="margin:10px 0 4px;"><b>疑慮或待確認事項</b></div>
+    <textarea class="notes" data-k="cons"></textarea>
+    <div class="decision">
+      <span style="color:var(--ink)">錄取建議：</span>
+      <label class="radio"><input type="radio" name="decide" value="推薦錄取"><span class="ring"></span>推薦錄取</label>
+      <label class="radio"><input type="radio" name="decide" value="列入候補"><span class="ring"></span>列入候補</label>
+      <label class="radio"><input type="radio" name="decide" value="不錄取"><span class="ring"></span>不錄取</label>
+    </div>
+    <div class="sign">
+      <label>面試官簽名：<input type="text" data-k="signName"></label>
+      <label>日期：<input type="text" data-k="signDate"></label>
+    </div>
+  </div>
+
+  <div class="formfoot">
+    <button class="btn btn-primary" onclick="saveCandidate()">儲存到名單</button>
+    <button class="btn btn-ghost" onclick="copyNotionOne()">複製成 Notion 格式</button>
+    <button class="btn btn-ghost" onclick="newCandidate()">清空表單（填下一位）</button>
+  </div>
+</div>
+
+<!-- ============ 應徵者比較 ============ -->
+<div class="paper hidden" id="viewCmp">
+  <div class="cmp-head">
+    <h2>應徵者比較</h2>
+    <span class="sub" id="cmpSub"></span>
+  </div>
+  <div id="cmpBody"></div>
+  <div class="formfoot" id="cmpFoot" style="display:none;">
+    <button class="btn btn-primary" onclick="copyNotionAll()">複製整份名單（Notion）</button>
+    <button class="btn btn-ghost" onclick="window.print()">輸出比較表 PDF</button>
+    <button class="btn btn-ghost" onclick="clearRoster()">清空整份名單</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const KEY_DRAFT='nav_intv_draft', KEY_ROSTER='nav_intv_roster', KEY_TH='nav_intv_threshold';
+const ITEMS=["經歷相關度與工作穩定性","行政與數位工具能力","客戶服務與溝通表達",
+             "細心度與抗壓性","團隊配合與學習意願","整體印象與適配度"];
+const SHORT=["經歷","數位","客服","細心","團隊","整體"];
+let editId=null;
+
+/* ---- localStorage 安全包裝（無法存取時自動降級） ---- */
+const store={
+  get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}},
+  del(k){try{localStorage.removeItem(k);}catch(e){}}
+};
+
+/* ---- 建立評分列 ---- */
+const list=document.getElementById('scoreList');
+ITEMS.forEach((name,i)=>{
+  const row=document.createElement('div');
+  row.className='score-row';
+  let scale='<div class="scale">';
+  for(let n=1;n<=5;n++)
+    scale+=`<label class="num"><input type="radio" name="s${i}" value="${n}"><span class="dot">${n}</span></label>`;
+  scale+='</div>';
+  row.innerHTML=`<div class="name">${name}</div>${scale}`;
+  list.appendChild(row);
+});
+
+/* ---- 讀 / 寫表單 ---- */
+function getData(){
+  const d={};
+  document.querySelectorAll('#viewForm [data-k]').forEach(el=>{
+    d[el.dataset.k]=(el.type==='checkbox')?el.checked:el.value;
+  });
+  d.scores={};
+  for(let i=0;i<6;i++){const c=document.querySelector(`input[name=s${i}]:checked`);d.scores[i]=c?+c.value:0;}
+  const dec=document.querySelector('input[name=decide]:checked');
+  d.decide=dec?dec.value:'';
+  return d;
+}
+function setData(d){
+  d=d||{};
+  document.querySelectorAll('#viewForm [data-k]').forEach(el=>{
+    const v=d[el.dataset.k];
+    if(el.type==='checkbox')el.checked=!!v;
+    else el.value=(v!==undefined&&v!==null)?v:(el.dataset.k==='position'?'行政櫃檯人員':'');
+  });
+  for(let i=0;i<6;i++){
+    document.querySelectorAll(`input[name=s${i}]`).forEach(r=>{
+      r.checked=(d.scores&&+d.scores[i]===+r.value);
+    });
+  }
+  document.querySelectorAll('input[name=decide]').forEach(r=>{r.checked=(d.decide===r.value);});
+  recalc();
+}
+function total(scores){let t=0;for(let i=0;i<6;i++)t+=(scores&&+scores[i])||0;return t;}
+
+/* ---- 評分加總 + 門檻提示 ---- */
+function recalc(){
+  const t=total(getData().scores);
+  document.getElementById('sum').textContent=t;
+  const th=+document.getElementById('threshold').value||0;
+  const anyScored=t>0;
+  document.getElementById('flag').classList.toggle('show', anyScored && t<th);
+}
+
+/* ---- 自動暫存 ---- */
+let saveTimer=null;
+function autosave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    const ok=store.set(KEY_DRAFT,{data:getData(),editId});
+    const el=document.getElementById('saveState');
+    if(ok){const now=new Date();el.textContent='已自動儲存 '+now.toTimeString().slice(0,8);el.style.color='var(--ok)';}
+    else{el.textContent='（此預覽環境無法存檔，下載後使用即正常）';el.style.color='var(--muted)';}
+  },350);
+}
+document.getElementById('viewForm').addEventListener('input',()=>{recalc();autosave();});
+document.getElementById('viewForm').addEventListener('change',()=>{recalc();autosave();});
+document.getElementById('threshold').addEventListener('input',()=>{
+  store.set(KEY_TH,+document.getElementById('threshold').value||0);recalc();
+});
+
+/* ---- 名單操作 ---- */
+function roster(){return store.get(KEY_ROSTER)||[];}
+function saveRoster(r){store.set(KEY_ROSTER,r);refreshCount();}
+
+function saveCandidate(){
+  const d=getData();
+  if(!d.name||!d.name.trim()){alert('請先填寫「應徵者姓名」再儲存到名單。');return;}
+  const r=roster();
+  if(editId){
+    const i=r.findIndex(x=>x.id===editId);
+    if(i>=0){r[i]={...r[i],data:d,savedAt:Date.now(),exported:false};}
+    else r.push({id:editId,data:d,savedAt:Date.now()});
+  }else{
+    r.push({id:'c'+Date.now(),data:d,savedAt:Date.now()});
+  }
+  saveRoster(r);
+  editId=null;
+  alert('已儲存到名單：'+d.name.trim());
+  newCandidate(true);
+}
+function newCandidate(silent){
+  if(!silent && !confirm('清空目前表單，開始填下一位？（已儲存到名單的資料不受影響）'))return;
+  editId=null;
+  setData({});
+  store.del(KEY_DRAFT);
+  document.getElementById('saveState').textContent='　';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function loadCandidate(id){
+  const r=roster();const c=r.find(x=>x.id===id);if(!c)return;
+  editId=id;setData(c.data);
+  showView('form');
+  store.set(KEY_DRAFT,{data:c.data,editId});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteCandidate(id){
+  const r=roster();const c=r.find(x=>x.id===id);
+  if(!confirm('刪除「'+(c?c.data.name:'')+'」？此動作無法復原。'))return;
+  saveRoster(r.filter(x=>x.id!==id));
+  if(editId===id)editId=null;
+  renderCompare();
+}
+function clearRoster(){
+  if(!confirm('確定清空整份應徵者名單？所有已儲存的人都會被刪除。'))return;
+  store.del(KEY_ROSTER);renderCompare();
+}
+function refreshCount(){document.getElementById('cmpCount').textContent=roster().length;}
+
+/* ---- 比較頁 ---- */
+function renderCompare(){
+  refreshCount();
+  const r=roster();const th=+document.getElementById('threshold').value||0;
+  const body=document.getElementById('cmpBody');
+  const foot=document.getElementById('cmpFoot');
+  const sub=document.getElementById('cmpSub');
+  if(r.length===0){
+    body.innerHTML='<div class="empty">尚未儲存任何應徵者。<br>在「填寫表單」完成後，按下方<b>「儲存到名單」</b>即可加入比較。</div>';
+    foot.style.display='none';sub.textContent='';return;
+  }
+  foot.style.display='flex';
+  sub.textContent='共 '+r.length+' 位　·　門檻 '+th+' 分';
+  const withTot=r.map(c=>({...c,tot:total(c.data.scores)}));
+  const best=Math.max(...withTot.map(c=>c.tot));
+  withTot.sort((a,b)=>b.tot-a.tot);
+  let h='<div class="tablewrap"><table class="cmp"><thead><tr>'
+    +'<th>應徵者</th><th>日期</th>'+SHORT.map(s=>'<th>'+s+'</th>').join('')
+    +'<th>總分</th><th>建議</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+  withTot.forEach(c=>{
+    const below=c.tot>0&&c.tot<th;
+    const isBest=c.tot===best&&best>0;
+    const cls=[below?'below':'',isBest?'best':''].filter(Boolean).join(' ');
+    const decTag=c.data.decide?('<span class="tag '+(c.data.decide==='不錄取'?'warn':'ok')+'">'+c.data.decide+'</span>'):'—';
+    const status=below?'<span class="tag warn">建議再評估</span>':(c.tot>0?'<span class="tag ok">達門檻</span>':'—');
+    h+='<tr class="'+cls+'"><td class="name">'+esc(c.data.name||'(未命名)')+(c.exported?' <span class="exp">✓已匯入</span>':'')+'</td>'
+      +'<td>'+esc(c.data.date||'')+'</td>';
+    for(let i=0;i<6;i++)h+='<td>'+(c.data.scores&&c.data.scores[i]?c.data.scores[i]:'·')+'</td>';
+    h+='<td class="tot">'+c.tot+'</td><td>'+decTag+'</td><td>'+status+'</td>'
+      +'<td style="white-space:nowrap"><button class="rowbtn" onclick="loadCandidate(\''+c.id+'\')">載入</button> '
+      +'<button class="rowbtn del" onclick="deleteCandidate(\''+c.id+'\')">刪除</button></td></tr>';
+  });
+  h+='</tbody></table></div>';
+  body.innerHTML=h;
+}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+/* ---- 切換分頁 ---- */
+function showView(v){
+  const f=v==='form';
+  document.getElementById('viewForm').classList.toggle('hidden',!f);
+  document.getElementById('viewCmp').classList.toggle('hidden',f);
+  document.getElementById('tabForm').classList.toggle('active',f);
+  document.getElementById('tabCmp').classList.toggle('active',!f);
+  if(!f)renderCompare();
+}
+
+/* ---- 複製成 Notion 格式（貼進資料庫即新增一列） ---- */
+const OBS_LABELS=["準時抵達","儀容得體","眼神微笑","談吐有禮","主動提問","情緒穩定","回答具體"];
+function notionRow(d){
+  const s=d.scores||{};
+  const obs=[];
+  for(let i=0;i<7;i++) if(d['obs'+i]) obs.push(OBS_LABELS[i]);
+  const cell=v=>String(v==null?'':v).replace(/[\t\n\r]/g,' ');
+  const cols=[
+    d.name||'', d.date||'', d.position||'', d.interviewer||'',
+    s[0]||'', s[1]||'', s[2]||'', s[3]||'', s[4]||'', s[5]||'',
+    d.decide||'',
+    obs.join(', '),
+    d.pros||'', d.cons||''
+  ];
+  return cols.map(cell).join('\t');
+}
+function copyText(t,msg){
+  const done=()=>toast(msg);
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(done).catch(()=>fallbackCopy(t,done));
+  else fallbackCopy(t,done);
+}
+function fallbackCopy(t,cb){
+  const ta=document.createElement('textarea');ta.value=t;
+  ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);cb&&cb();
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3600);
+}
+function copyNotionOne(){
+  const d=getData();
+  if(!d.name||!d.name.trim()){alert('請先填寫「應徵者姓名」再複製。');return;}
+  copyText(notionRow(d),'已複製「'+d.name.trim()+'」　到 Notion 的「貼上專用」檢視，點空白列第一格貼上即可');
+  if(editId){const full=roster().map(c=>c.id===editId?{...c,exported:true}:c);saveRoster(full);}
+}
+function copyNotionAll(){
+  const r=roster();
+  if(!r.length){alert('名單目前是空的。');return;}
+  let targets=r.filter(c=>!c.exported), mode='new';
+  if(targets.length===0){
+    if(!confirm('名單中所有人都已匯入過 Notion。要再複製全部 '+r.length+' 位嗎？（可能造成重複）'))return;
+    targets=r;mode='all';
+  }
+  const txt=targets.map(c=>notionRow(c.data)).join('\n');
+  copyText(txt,'已複製 '+targets.length+' 位'+(mode==='new'?'（僅未匯入者）':'（全部）')+'　貼進 Notion「貼上專用」檢視空白列第一格');
+  const ids=new Set(targets.map(c=>c.id));
+  saveRoster(roster().map(c=>ids.has(c.id)?{...c,exported:true}:c));
+  if(!document.getElementById('viewCmp').classList.contains('hidden'))renderCompare();
+}
+
+/* ---- 啟動：還原門檻與草稿 ---- */
+(function init(){
+  const th=store.get(KEY_TH);
+  if(th!==null)document.getElementById('threshold').value=th;
+  const draft=store.get(KEY_DRAFT);
+  if(draft&&draft.data){editId=draft.editId||null;setData(draft.data);}
+  else recalc();
+  refreshCount();
+})();
+</script>
+</body>
+</html>
